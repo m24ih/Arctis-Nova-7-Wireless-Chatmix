@@ -389,26 +389,24 @@ fn find_arctis_sink() -> Result<String> {
 }
 
 fn link_sink_to_device(sink_name: &str, device_name: &str) -> Result<()> {
-    let fl_link = Command::new("pw-link")
-        .arg(format!("{}:monitor_FL", sink_name))
-        .arg(format!("{}:playback_FL", device_name))
-        .stdout(Stdio::null())
-        .status()
-        .context("Failed to link FL channel")?;
+    for channel in ["FL", "FR"] {
+        let src = format!("{}:monitor_{}", sink_name, channel);
+        let dst = format!("{}:playback_{}", device_name, channel);
 
-    if !fl_link.success() {
-        anyhow::bail!("pw-link FL failed");
-    }
+        let output = Command::new("pw-link")
+            .arg(&src)
+            .arg(&dst)
+            .output()
+            .context(format!("Failed to execute pw-link for {}", channel))?;
 
-    let fr_link = Command::new("pw-link")
-        .arg(format!("{}:monitor_FR", sink_name))
-        .arg(format!("{}:playback_FR", device_name))
-        .stdout(Stdio::null())
-        .status()
-        .context("Failed to link FR channel")?;
-
-    if !fr_link.success() {
-        anyhow::bail!("pw-link FR failed");
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("File exists") || stderr.contains("exists") {
+                warn!("Link already exists (skipping): {} -> {}", src, dst);
+            } else {
+                anyhow::bail!("pw-link failed for {}: {}", channel, stderr.trim());
+            }
+        }
     }
 
     Ok(())
