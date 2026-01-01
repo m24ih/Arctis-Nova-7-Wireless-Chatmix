@@ -7,10 +7,10 @@ set -euo pipefail
 
 # Defaults
 BINARY="./arctis_chatmix"
-MODE="user"            # user or system
-INSTALL_UDEV="yes"     # yes/no
-ENABLE_SERVICE="yes"   # yes/no
-ENABLE_LINGER="no"     # yes/no (only relevant for user mode)
+MODE="user"          # user or system
+INSTALL_UDEV="yes"   # yes/no
+ENABLE_SERVICE="yes" # yes/no
+ENABLE_LINGER="no"   # yes/no (only relevant for user mode)
 
 print_help() {
   cat <<'USAGE'
@@ -38,22 +38,40 @@ USAGE
 # Parse args (simple parser)
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --binary)
-      shift; BINARY="$1"; shift;;
-    --mode)
-      shift; MODE="$1"; shift;;
-    --udev)
-      shift; INSTALL_UDEV="$1"; shift;;
-    --enable-service)
-      shift; ENABLE_SERVICE="$1"; shift;;
-    --enable-linger)
-      shift; ENABLE_LINGER="$1"; shift;;
-    -h|--help)
-      print_help; exit 0;;
-    *)
-      echo "Unknown argument: $1"
-      print_help
-      exit 2;;
+  --binary)
+    shift
+    BINARY="$1"
+    shift
+    ;;
+  --mode)
+    shift
+    MODE="$1"
+    shift
+    ;;
+  --udev)
+    shift
+    INSTALL_UDEV="$1"
+    shift
+    ;;
+  --enable-service)
+    shift
+    ENABLE_SERVICE="$1"
+    shift
+    ;;
+  --enable-linger)
+    shift
+    ENABLE_LINGER="$1"
+    shift
+    ;;
+  -h | --help)
+    print_help
+    exit 0
+    ;;
+  *)
+    echo "Unknown argument: $1"
+    print_help
+    exit 2
+    ;;
   esac
 done
 
@@ -66,9 +84,15 @@ ask_yes_no() {
     read -r -p "$prompt [$default] " reply || exit 1
     reply="${reply:-$default}"
     case "${reply,,}" in
-      y|yes) echo "yes"; return 0;;
-      n|no) echo "no"; return 0;;
-      *) echo "Please answer yes or no (y/n).";;
+    y | yes)
+      echo "yes"
+      return 0
+      ;;
+    n | no)
+      echo "no"
+      return 0
+      ;;
+    *) echo "Please answer yes or no (y/n)." ;;
     esac
   done
 }
@@ -129,9 +153,9 @@ install_user() {
   echo "Binary installed to ${USER_BIN_DIR}/arctis_chatmix"
 
   mkdir -p "${USER_UNIT_DIR}"
-  cat > "${USER_UNIT_DIR}/${SERVICE_NAME}" <<'UNIT'
+  cat >"${USER_UNIT_DIR}/${SERVICE_NAME}" <<'UNIT'
 [Unit]
-Description=Arctis 7+ ChatMix (virtual-sink mixer)
+Description=Arctis Nova 7 ChatMix (virtual-sink mixer)
 Wants=pipewire.service
 After=pipewire.service
 
@@ -185,9 +209,9 @@ install_system() {
 
   # write systemd unit
   if [[ $EUID -ne 0 ]]; then
-    sudo tee "${SYSTEM_UNIT_DIR}/${SERVICE_NAME}" > /dev/null <<'UNIT'
+    sudo tee "${SYSTEM_UNIT_DIR}/${SERVICE_NAME}" >/dev/null <<'UNIT'
 [Unit]
-Description=Arctis 7+ ChatMix (virtual-sink mixer)
+Description=Arctis Nova 7 ChatMix (virtual-sink mixer)
 Wants=pipewire.service
 After=pipewire.service
 
@@ -206,9 +230,9 @@ UNIT
       sudo systemctl enable --now arctis_chatmix.service
     fi
   else
-    tee "${SYSTEM_UNIT_DIR}/${SERVICE_NAME}" > /dev/null <<'UNIT'
+    tee "${SYSTEM_UNIT_DIR}/${SERVICE_NAME}" >/dev/null <<'UNIT'
 [Unit]
-Description=Arctis 7+ ChatMix (virtual-sink mixer)
+Description=Arctis Nova 7 ChatMix (virtual-sink mixer)
 Wants=pipewire.service
 After=pipewire.service
 
@@ -243,11 +267,11 @@ install_udev() {
 KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="2202", MODE="0660", GROUP="audio", TAG+="uaccess"'
 
   if [[ $EUID -ne 0 ]]; then
-    echo "$UDEV_CONTENT" | sudo tee "${UDEV_RULE_PATH}" > /dev/null
+    echo "$UDEV_CONTENT" | sudo tee "${UDEV_RULE_PATH}" >/dev/null
     sudo udevadm control --reload
     sudo udevadm trigger --subsystem-match=usb --attr-match=idVendor=1038 --attr-match=idProduct=2202 || true
   else
-    echo "$UDEV_CONTENT" > "${UDEV_RULE_PATH}"
+    echo "$UDEV_CONTENT" >"${UDEV_RULE_PATH}"
     udevadm control --reload
     udevadm trigger --subsystem-match=usb --attr-match=idVendor=1038 --attr-match=idProduct=2202 || true
   fi
