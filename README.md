@@ -1,6 +1,6 @@
-# Arctis Nova 7+ Wireless ChatMix
+# Arctis Nova 7 ChatMix
 
-Lightweight helper that creates two PipeWire virtual sinks (Arctis_Game and Arctis_Chat), links them to your SteelSeries Arctis Nova 7 wireless dongle, and exposes the headset's hardware ChatMix HID controls to set volumes for each virtual sink. The program watches for the dongle being unplugged and will automatically reconnect, relink the virtual sinks and move existing audio streams so playback continues without restarting apps.
+Lightweight helper that creates two PipeWire virtual sinks (Arctis_Game and Arctis_Chat), links them to your SteelSeries Arctis Nova 7 dongle, and exposes the headset's hardware ChatMix HID controls to set volumes for each virtual sink. The program watches for the dongle being unplugged and will automatically reconnect, relink the virtual sinks and move existing audio streams so playback continues without restarting apps.
 
 This repository contains:
 - Rust implementation of the controller (`src/main.rs`)
@@ -32,25 +32,33 @@ Features
   - moves existing sink-inputs (clients) to Arctis_Game so audio continues without restarting applications
 - Clean shutdown sets the original default sink back and destroys the virtual sink nodes
 
-Quick install (recommended: per-user)
-1. Build or download the binary
-   - Build locally:
-     cargo build --release
-     The binary will be at `target/release/arctis_chatmix`
+## Installation
 
-2. Run the interactive installer script included in this repo:
+### Quick Start
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/m24ih/Arctis-Nova-7-Chatmix.git
+   cd Arctis-Nova-7-Chatmix
+   ```
+
+
+
+2. Run the installer:
+   ```bash
    chmod +x install.sh
    ./install.sh
-   - Default is a per-user install (recommended for PipeWire).
-   - The script can also install system-wide (requires sudo).
-   - It can optionally install a udev rule to give the active user access to the dongle.
+   # Select the pre-built 'arctis_chatmix' binary when prompted (default)
+   ```
+   - The script will guide you through the process (user/system service, udev rules, etc.).
 
-Non-interactive example
-- Per-user install using a local built binary:
-  ./install.sh --binary ./target/release/arctis_chatmix --mode user --udev yes --enable-service yes --enable-linger no
+### Non-interactive example
+
+
+- Per-user install:
+  ./install.sh --binary ./arctis_chatmix --mode user --udev yes --enable-service yes --enable-linger no
 
 - System install (requires sudo):
-  sudo ./install.sh --binary ./target/release/arctis_chatmix --mode system --udev yes --enable-service yes
+  sudo ./install.sh --binary ./arctis_chatmix --mode system --udev yes --enable-service yes
 
 Files the installer writes
 - User mode:
@@ -93,16 +101,34 @@ Security & permissions
 - The process needs permission to access the USB device (via libusb). The udev rule + membership in `audio` is the recommended approach to avoid running the service as root.
 - If detach/claim fails repeatedly, running as root will usually work, but it's less desirable for interacting with a user PipeWire session.
 
-Building from source
-- Install Rust toolchain (rustup) and ensure `cargo` is available.
-- cargo build --release
-- Use the provided install script to deploy the binary.
+
 
 License
 - This project is provided under the MIT license — see the included LICENSE file.
 
-Contributing
-- Bug reports, improvements and PRs are welcome. Please open issues/PRs on the repository.
+## Contributing
 
-Contact
-- Maintainer: Keith Henderson
+We welcome contributions! Here's how to get started:
+
+1. **Fork** the repository on GitHub.
+2. **Clone** your fork locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/Arctis-Nova-7-Chatmix.git
+   cd Arctis-Nova-7-Chatmix
+   ```
+3. Create a new **feature branch**:
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+4. Make your changes and verify they build:
+   ```bash
+   cd source
+   cargo build
+   ```
+5. Commit and push your changes:
+   ```bash
+   git add .
+   git commit -m "feat: Add amazing feature"
+   git push origin feature/amazing-feature
+   ```
+6. Open a **Pull Request** on GitHub against the `master` branch.
