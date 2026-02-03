@@ -12,9 +12,19 @@ use std::sync::{
 };
 use std::time::Duration;
 
-// Arctis Nova 7 Vendor/Product ID
+// Arctis Nova 7 Vendor/Product IDs
 const VENDOR_ID: u16 = 0x1038;
-const PRODUCT_ID: u16 = 0x2202;
+const SUPPORTED_PRODUCT_IDS: &[u16] = &[
+    0x2202, // Arctis Nova 7 (discrete battery: 0-4)
+    0x22A1, // Arctis Nova 7 Gen 2 (percentage battery: 0-100, Jan 2026 update)
+    0x227e, // Arctis Nova 7 Wireless Gen 2 (percentage battery: 0-100)
+    0x2206, // Arctis Nova 7x (discrete battery: 0-4)
+    0x2258, // Arctis Nova 7x v2 (percentage battery: 0-100)
+    0x229e, // Arctis Nova 7x v2 (percentage battery: 0-100)
+    0x223a, // Arctis Nova 7 Diablo IV (discrete battery: 0-4, before Jan 2026 update)
+    0x22a9, // Arctis Nova 7 Diablo IV (percentage battery: 0-100, after Jan 2026 update)
+    0x227a  // Arctis Nova 7 WoW Edition (discrete battery: 0-4)
+];
 const HID_MSG_SIZE: usize = 64;
 
 struct ArctisController {
@@ -434,7 +444,11 @@ fn hidapi_send_sidetone(percent: u8) -> Result<()> {
     data[2] = bucket;
 
     let api = HidApi::new()?;
-    let device = api.open(VENDOR_ID, PRODUCT_ID)?;
+    // Try to open any of the supported devices
+    let device = SUPPORTED_PRODUCT_IDS.iter().find_map(|&pid| {
+        api.open(VENDOR_ID, pid).ok()
+    }).context("Failed to open any supported Arctis Nova 7 device for sidetone")?;
+    
     device.write(&data)?;
     info!("Sidetone updated to bucket {}", bucket);
     Ok(())
@@ -444,7 +458,7 @@ fn hidapi_send_sidetone(percent: u8) -> Result<()> {
 fn usb_find_and_open<T: UsbContext>(usb_ctx: &T) -> Result<(DeviceHandle<T>, u8, u8)> {
     let dev = usb_ctx.devices()?.iter().find(|d| {
         if let Ok(desc) = d.device_descriptor() {
-            desc.vendor_id() == VENDOR_ID && desc.product_id() == PRODUCT_ID
+            desc.vendor_id() == VENDOR_ID && SUPPORTED_PRODUCT_IDS.contains(&desc.product_id())
         } else { false }
     }).ok_or_else(|| anyhow::anyhow!("Arctis Nova 7 not found"))?;
 
@@ -467,7 +481,7 @@ fn usb_find_and_open<T: UsbContext>(usb_ctx: &T) -> Result<(DeviceHandle<T>, u8,
     }
 
     let interface_num = target_interface_num.ok_or_else(|| anyhow::anyhow!("Could not find HID interface"))?;
-    let mut handle = dev.open().context("Failed to open USB device")?;
+    let handle = dev.open().context("Failed to open USB device")?;
 
     try_hidapi_sidetone_from_env();
 

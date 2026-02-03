@@ -163,6 +163,7 @@ After=pipewire.service
 Type=simple
 ExecStart=%h/.local/bin/arctis_chatmix
 Environment=ARCTIS_SIDETONE_DISABLE=1
+Environment=RUST_LOG=info
 Restart=on-failure
 RestartSec=5
 
@@ -219,6 +220,7 @@ After=pipewire.service
 Type=simple
 ExecStart=/usr/local/bin/arctis_chatmix
 Environment=ARCTIS_SIDETONE_DISABLE=1
+Environment=RUST_LOG=info
 Restart=on-failure
 RestartSec=5
 
@@ -240,6 +242,7 @@ After=pipewire.service
 Type=simple
 ExecStart=/usr/local/bin/arctis_chatmix
 Environment=ARCTIS_SIDETONE_DISABLE=1
+Environment=RUST_LOG=info
 Restart=on-failure
 RestartSec=5
 
@@ -263,17 +266,28 @@ install_udev() {
 
   echo "Installing udev rule (requires sudo)..."
 
-  UDEV_CONTENT='ATTRS{idVendor}=="1038", ATTRS{idProduct}=="2202", MODE="0660", GROUP="audio", TAG+="uaccess"
-KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="2202", MODE="0660", GROUP="audio", TAG+="uaccess"'
+  # Supported Product IDs
+  PIDS=("2202" "22a1" "227e" "2206" "2258" "229e" "223a" "22a9" "227a")
+
+  UDEV_CONTENT=""
+  for pid in "${PIDS[@]}"; do
+    UDEV_CONTENT+='ATTRS{idVendor}=="1038", ATTRS{idProduct}=="'"$pid"'", MODE="0660", GROUP="audio", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="1038", ATTRS{idProduct}=="'"$pid"'", MODE="0660", GROUP="audio", TAG+="uaccess"
+'
+  done
 
   if [[ $EUID -ne 0 ]]; then
     echo "$UDEV_CONTENT" | sudo tee "${UDEV_RULE_PATH}" >/dev/null
     sudo udevadm control --reload
-    sudo udevadm trigger --subsystem-match=usb --attr-match=idVendor=1038 --attr-match=idProduct=2202 || true
+    for pid in "${PIDS[@]}"; do
+        sudo udevadm trigger --subsystem-match=usb --attr-match=idVendor=1038 --attr-match=idProduct="$pid" || true
+    done
   else
     echo "$UDEV_CONTENT" >"${UDEV_RULE_PATH}"
     udevadm control --reload
-    udevadm trigger --subsystem-match=usb --attr-match=idVendor=1038 --attr-match=idProduct=2202 || true
+    for pid in "${PIDS[@]}"; do
+        udevadm trigger --subsystem-match=usb --attr-match=idVendor=1038 --attr-match=idProduct="$pid" || true
+    done
   fi
 
   echo "udev rule installed to ${UDEV_RULE_PATH}"
